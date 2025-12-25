@@ -1,38 +1,28 @@
 // src/components/chat/ChatInput.tsx
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { KeyboardEvent } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Paperclip, Mic, StopCircle } from 'lucide-react';
+import { Send, StopCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils/cn';
 
 interface ChatInputProps {
-  onSend: (message: string) => void;
+  input: string;
+  setInput: (value: string) => void;
+  onSend: () => void;
   isLoading: boolean;
+  onStop?: () => void;
 }
 
-export function ChatInput({ onSend, isLoading }: ChatInputProps) {
-  const [message, setMessage] = useState('');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // 自动调整高度
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
-    }
-  }, [message]);
-
+export function ChatInput({ input, setInput, onSend, isLoading, onStop }: ChatInputProps) {
   const handleSubmit = () => {
-    if (message.trim() && !isLoading) {
-      onSend(message.trim());
-      setMessage('');
+    if (input.trim() && !isLoading) {
+      onSend();
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
@@ -47,21 +37,10 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
       className="p-4 border-t border-white/10"
     >
       <div className="max-w-4xl mx-auto">
-        <div className="glass-heavy rounded-2xl p-2 flex items-end gap-2">
-          {/* 附件按钮 */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-colors"
-          >
-            <Paperclip size={20} />
-          </motion.button>
-
-          {/* 输入框 */}
+        <div className="bg-white/15 backdrop-blur-lg border border-white/15 rounded-2xl p-2 flex items-end gap-2">
           <textarea
-            ref={textareaRef}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="输入消息... (Shift + Enter 换行)"
             rows={1}
@@ -73,42 +52,22 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
             disabled={isLoading}
           />
 
-          {/* 语音按钮 */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-colors"
-          >
-            <Mic size={20} />
-          </motion.button>
-
-          {/* 发送/停止按钮 */}
-          <Button
-            onClick={handleSubmit}
-            disabled={!message.trim() || isLoading}
-            size="sm"
-            className="rounded-xl"
-          >
-            {isLoading ? (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring' }}
-              >
-                <StopCircle size={18} />
-              </motion.div>
-            ) : (
-              <motion.div
-                whileHover={{ x: 2 }}
-                transition={{ type: 'spring', stiffness: 400 }}
-              >
-                <Send size={18} />
-              </motion.div>
-            )}
-          </Button>
+          {isLoading ? (
+            <Button onClick={onStop} size="sm" variant="secondary" className="rounded-xl">
+              <StopCircle size={18} />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSubmit}
+              disabled={!input.trim()}
+              size="sm"
+              className="rounded-xl"
+            >
+              <Send size={18} />
+            </Button>
+          )}
         </div>
 
-        {/* 底部提示 */}
         <p className="text-center text-xs text-white/30 mt-2">
           AI 可能会产生不准确的信息，请注意核实
         </p>

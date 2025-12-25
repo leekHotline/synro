@@ -6,11 +6,27 @@ import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { ModelSelector } from './ModelSelector';
 import { motion } from 'framer-motion';
-import { MessageSquarePlus } from 'lucide-react';
+import { MessageSquarePlus, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export function ChatContainer() {
-  const { conversation, isLoading, streamingContent, sendMessage, createNewChat } = useChat();
+  const {
+    messages,
+    input,
+    setInput,
+    isLoading,
+    error,
+    sendMessage,
+    createNewChat,
+    stop,
+  } = useChat();
+
+  const handleSend = () => {
+    if (input.trim()) {
+      sendMessage(input.trim());
+      setInput('');
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col h-full">
@@ -25,36 +41,41 @@ export function ChatContainer() {
             <MessageSquarePlus size={18} />
             <span className="hidden sm:inline">新对话</span>
           </Button>
-          {conversation && (
-            <motion.h1
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-white/80 text-sm truncate max-w-[200px]"
-            >
-              {conversation.title}
-            </motion.h1>
-          )}
         </div>
         <ModelSelector />
       </motion.header>
 
+      {/* 错误提示 */}
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-4 mt-2 p-3 bg-red-500/20 border border-red-500/30 rounded-xl flex items-center gap-2 text-red-300"
+        >
+          <AlertCircle size={18} />
+          <span className="text-sm">{error}</span>
+        </motion.div>
+      )}
+
       {/* 消息列表 */}
-      {conversation?.messages.length ? (
-        <MessageList
-          messages={conversation.messages}
-          streamingContent={streamingContent}
-        />
+      {messages.length > 0 ? (
+        <MessageList messages={messages} />
       ) : (
         <EmptyState />
       )}
 
       {/* 输入框 */}
-      <ChatInput onSend={sendMessage} isLoading={isLoading} />
+      <ChatInput
+        input={input}
+        setInput={setInput}
+        onSend={handleSend}
+        isLoading={isLoading}
+        onStop={stop}
+      />
     </div>
   );
 }
 
-// 空状态组件
 function EmptyState() {
   return (
     <div className="flex-1 flex items-center justify-center">
