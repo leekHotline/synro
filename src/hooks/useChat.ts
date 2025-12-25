@@ -1,14 +1,14 @@
 // src/hooks/useChat.ts
 'use client';
 
-import { useChat as useAIChat } from '@ai-sdk/react';
-import { useCallback, useState } from 'react';
+import { Chat, useChat as useAIChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import { useCallback, useState, useRef } from 'react';
 import { useChatStore } from '@/stores/chatStore';
-import { Message, Conversation } from '@/types';
+import { Conversation } from '@/types';
 
 export function useChat() {
   const {
-    conversations,
     currentConversationId,
     currentProvider,
     currentModel,
@@ -17,42 +17,52 @@ export function useChat() {
     setCurrentConversation,
   } = useChatStore();
 
-  const [error, setError] = useState<string | null>(null);
+  const [input, setInput] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const apiKey = apiKeys[currentProvider];
-  const currentConversation = conversations.find((c) => c.id === currentConversationId);
 
-  // ✅ 使用 AI SDK 6.0 的 useChat hook
+  // 使用 useRef 存储 Chat 实例
+  const chatRef = useRef<Chat<any> | null>(null);
+
+  // 创建 Chat 实例
+  if (!chatRef.current) {
+    const transport = new DefaultChatTransport({
+      api: '/api/chat',
+      body: {
+        model: currentModel,
+        provider: currentProvider,
+        encryptedApiKey: apiKey || '',
+      },
+    });
+
+    chatRef.current = new Chat({
+      transport,
+    });
+  }
+
   const {
     messages,
-    input,
-    setInput,
-    isLoading,
-    append,
-    reload,
+    status,
+    error: chatError,
+    sendMessage,
     stop,
-  } = useAIChat({
-    api: '/api/chat',
-    body: {
-      model: currentModel,
-      provider: currentProvider,
-      encryptedApiKey: apiKey || '',
-    },
-    onError: (err) => {
-      setError(err.message);
-    },
-  });
+    clearError,
+  } = useAIChat({ chat: chatRef.current });
 
-  const sendMessage = useCallback(
-    async (content: string) => {
+  const isLoading = status === 'submitted' || status === 'streaming';
+  const error = chatError?.message || localError;
+
+  const handleSendMessage = useCallback(
+    (content: string) => {
       if (!apiKey) {
-        setError(`请先配置 ${currentProvider} 的 API Key`);
+        setLocalError(`请先配置 ${currentProvider} 的 API Key`);
         return;
       }
 
-      setError(null);
+      setLocalError(null);
+      clearError();
 
-      // 创建新对话
       if (!currentConversationId) {
         const newConv: Conversation = {
           id: crypto.randomUUID(),
@@ -65,16 +75,13 @@ export function useChat() {
         addConversation(newConv);
       }
 
-      // ✅ AI SDK 6.0 使用 append 发送消息
-      await append({
-        role: 'user',
-        content,
-      });
+      sendMessage({ text: content });
     },
-    [apiKey, currentProvider, currentConversationId, currentModel, addConversation, append]
+    [apiKey, currentProvider, currentConversationId, currentModel, addConversation, sendMessage, clearError]
   );
 
   const createNewChat = useCallback(() => {
+    chatRef.current = null;
     setCurrentConversation(null);
   }, [setCurrentConversation]);
 
@@ -84,9 +91,8 @@ export function useChat() {
     setInput,
     isLoading,
     error,
-    sendMessage,
+    sendMessage: handleSendMessage,
     createNewChat,
-    reload,
     stop,
   };
 }

@@ -12,6 +12,7 @@
     "@ai-sdk/anthropic": "^3.0.1",
     "@ai-sdk/google": "^3.0.1",
     "@ai-sdk/openai": "^3.0.1",
+    "@ai-sdk/react": "^3.0.3",
     "@modelcontextprotocol/sdk": "^1.25.1",
     "@neondatabase/serverless": "^1.0.2",
     "ai": "^6.0.3",

@@ -1,15 +1,13 @@
 // src/app/api/chat/route.ts
-import { streamText, UIMessage, convertToModelMessages, tool } from 'ai';
+import { streamText, UIMessage, convertToModelMessages } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { z } from 'zod';
 import { decrypt } from '@/lib/utils/encryption';
 import { AIProvider } from '@/types';
 
 export const runtime = 'edge';
 
-// 创建模型实例
 function getModel(provider: AIProvider, modelId: string, apiKey: string) {
   switch (provider) {
     case 'openai':
@@ -27,39 +25,6 @@ function getModel(provider: AIProvider, modelId: string, apiKey: string) {
   }
 }
 
-// 定义工具
-const tools = {
-  getCurrentTime: tool({
-    description: 'Get the current date and time',
-    parameters: z.object({
-      timezone: z.string().optional().describe('Timezone like Asia/Shanghai'),
-    }),
-    execute: async ({ timezone = 'UTC' }) => {
-      const now = new Date();
-      return {
-        time: now.toLocaleString('en-US', { timeZone: timezone }),
-        timezone,
-        timestamp: now.toISOString(),
-      };
-    },
-  }),
-  calculate: tool({
-    description: 'Perform mathematical calculations',
-    parameters: z.object({
-      expression: z.string().describe('Math expression to evaluate'),
-    }),
-    execute: async ({ expression }) => {
-      try {
-        const sanitized = expression.replace(/[^0-9+\-*/().%\s]/g, '');
-        const result = Function(`"use strict"; return (${sanitized})`)();
-        return { expression, result };
-      } catch {
-        return { expression, error: 'Invalid expression' };
-      }
-    },
-  }),
-};
-
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -70,7 +35,6 @@ export async function POST(req: Request) {
       encryptedApiKey: string;
     };
 
-    // 验证参数
     if (!messages || !model || !provider || !encryptedApiKey) {
       return new Response(
         JSON.stringify({ error: 'Missing required parameters' }),
@@ -78,7 +42,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 解密 API Key
     const apiKey = decrypt(encryptedApiKey);
     if (!apiKey) {
       return new Response(
@@ -87,17 +50,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // 获取模型
     const aiModel = getModel(provider, model, apiKey);
 
-    // ✅ AI SDK 6.0 语法
+    // ✅ 最简 AI SDK v6 调用（无 tools）
     const result = streamText({
       model: aiModel,
       messages: await convertToModelMessages(messages),
-      tools,
     });
 
-    // ✅ 返回 UI 消息流响应
     return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error('Chat API Error:', error);
