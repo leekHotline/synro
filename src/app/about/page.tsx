@@ -1,3 +1,5 @@
+import Counter from "@/components/counter";
+
 async function getData() {;
     const res = await fetch('https://api.github.com/repos/leekHotline/chat-app')
     return res.json();
@@ -7,5 +9,15 @@ async function getData() {;
 
 export default async function AboutPage() {
     const data = await getData();
-    return <div>{data.description},{data.size},{data.topics}</div>
+    return (
+        <div>
+            <h1>About Page</h1>
+            <Counter />
+            <p>{data.description}</p>
+            <p>Size: {data.size} KB</p>
+            <p>Topics: {data.topics.join(', ')}</p>
+
+        </div>
+    )
+
 }
