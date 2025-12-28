@@ -5,7 +5,7 @@ async function getData() {;
 }
 
 
-async function AboutPage() {
+export default async function AboutPage() {
     const data = await getData();
     return <div>{data.description},{data.size},{data.topics}</div>
 }
