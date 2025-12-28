@@ -1,4 +1,4 @@
-import Counter from "@/components/counter";
+import Counter from "@/components/tests/Counter"
 
 async function getData() {;
     const res = await fetch('https://api.github.com/repos/leekHotline/chat-app')
