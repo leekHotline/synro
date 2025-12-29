@@ -30,9 +30,16 @@ const AuroraCharacter = forwardRef<AuroraCharacterRef, AuroraCharacterProps>(({
   const [isBlinking, setIsBlinking] = useState(false);
   const [currentExpression, setCurrentExpression] = useState<Expression>('neutral');
   const [showShySymbol, setShowShySymbol] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(true); // 绘制动画状态
   const expressionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const expression = forcedExpression || currentExpression;
+
+  // 绘制动画完成后关闭
+  useEffect(() => {
+    const timer = setTimeout(() => setIsDrawing(false), 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // 物理弹簧配置 - 更灵敏
   const springConfig = { mass: 0.5, stiffness: 180, damping: 15 };
@@ -174,7 +181,7 @@ const AuroraCharacter = forwardRef<AuroraCharacterRef, AuroraCharacterProps>(({
         whileTap={{ scale: 0.98 }}
       >
         {/* 极光球体 */}
-        <AuroraOrb mousePos={mousePos} />
+        <AuroraOrb mousePos={mousePos} isDrawing={isDrawing} />
 
         {/* 害羞符号 */}
         {showShySymbol && <ShySymbols />}
@@ -192,6 +199,7 @@ const AuroraCharacter = forwardRef<AuroraCharacterRef, AuroraCharacterProps>(({
           <Face 
             expression={expression}
             isBlinking={isBlinking}
+            isDrawing={isDrawing}
             eyebrowY={eyebrowY}
             eyebrowRotateLeft={eyebrowRotateLeft}
             eyebrowRotateRight={eyebrowRotateRight}
@@ -311,7 +319,7 @@ function DynamicBackground({
 }
 
 // 极光球体 - 3个120度扇形，颜色随鼠标位置变化，边界柔和无空白
-function AuroraOrb({ mousePos }: { mousePos: { x: number; y: number } }) {
+function AuroraOrb({ mousePos, isDrawing }: { mousePos: { x: number; y: number }; isDrawing: boolean }) {
   const { x, y } = mousePos;
   
   // 根据鼠标在视窗的位置混合四角颜色
@@ -341,7 +349,10 @@ function AuroraOrb({ mousePos }: { mousePos: { x: number; y: number } }) {
       {/* 扇形1 - 上方，扩展到150度覆盖间隙 */}
       <motion.div 
         className="absolute -inset-6 rounded-full"
+        initial={isDrawing ? { opacity: 0, scale: 0.8 } : false}
         animate={{
+          opacity: 1,
+          scale: 1,
           background: `conic-gradient(
             from 15deg at 50% 50%,
             rgba(${r}, ${g}, ${b}, 0.75) 0deg,
@@ -353,14 +364,17 @@ function AuroraOrb({ mousePos }: { mousePos: { x: number; y: number } }) {
             transparent 360deg
           )`
         }}
-        transition={{ duration: 0.25, ease: 'easeOut' }}
+        transition={{ duration: 0.8, ease: 'easeOut' }}
         style={{ filter: 'blur(30px)', mixBlendMode: 'screen' }}
       />
 
       {/* 扇形2 - 左下，扩展覆盖 */}
       <motion.div 
         className="absolute -inset-6 rounded-full"
+        initial={isDrawing ? { opacity: 0, scale: 0.8 } : false}
         animate={{
+          opacity: 1,
+          scale: 1,
           background: `conic-gradient(
             from 135deg at 50% 50%,
             rgba(${r2}, ${g2}, ${b2}, 0.7) 0deg,
@@ -483,6 +497,7 @@ function ShySymbols() {
 interface FaceProps {
   expression: Expression;
   isBlinking: boolean;
+  isDrawing: boolean;
   eyebrowY: MotionValue<number>;
   eyebrowRotateLeft: MotionValue<number>;
   eyebrowRotateRight: MotionValue<number>;
@@ -493,9 +508,16 @@ interface FaceProps {
   mouthOffsetX: MotionValue<number>;
 }
 
+// 绘制动画配置
+const drawTransition = (delay: number) => ({
+  pathLength: { duration: 0.6, delay, ease: "easeOut" as const },
+  opacity: { duration: 0.3, delay }
+});
+
 function Face({
   expression,
   isBlinking,
+  isDrawing,
   eyebrowY,
   eyebrowRotateLeft,
   eyebrowRotateRight,
@@ -503,7 +525,6 @@ function Face({
   eyeOffsetY,
   pupilOffsetX,
   pupilOffsetY,
-  mouthOffsetX
 }: FaceProps) {
   const baseStroke = "rgba(255, 255, 255, 0.95)";
   
@@ -516,6 +537,9 @@ function Face({
         stroke={baseStroke}
         strokeWidth="2.5"
         strokeLinecap="round"
+        initial={isDrawing ? { pathLength: 0, opacity: 0 } : false}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={drawTransition(0.2)}
         style={{ 
           y: eyebrowY,
           rotate: eyebrowRotateLeft,
@@ -530,6 +554,9 @@ function Face({
         stroke={baseStroke}
         strokeWidth="2.5"
         strokeLinecap="round"
+        initial={isDrawing ? { pathLength: 0, opacity: 0 } : false}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={drawTransition(0.35)}
         style={{ 
           y: eyebrowY,
           rotate: eyebrowRotateRight,
@@ -546,6 +573,7 @@ function Face({
           stroke={baseStroke}
           pupilOffsetX={pupilOffsetX}
           pupilOffsetY={pupilOffsetY}
+          isDrawing={isDrawing}
         />
       </motion.g>
 
@@ -558,11 +586,12 @@ function Face({
           stroke={baseStroke}
           pupilOffsetX={pupilOffsetX}
           pupilOffsetY={pupilOffsetY}
+          isDrawing={isDrawing}
         />
       </motion.g>
 
       {/* 鼻子 - 左偏15度的 J 形，拉长 */}
-      <path
+      <motion.path
         d="M 46 48 L 43 62 Q 42 67 48 67"
         fill="none"
         stroke={baseStroke}
@@ -570,6 +599,9 @@ function Face({
         strokeLinecap="round"
         strokeLinejoin="round"
         opacity={0.85}
+        initial={isDrawing ? { pathLength: 0, opacity: 0 } : false}
+        animate={{ pathLength: 1, opacity: 0.85 }}
+        transition={drawTransition(1.2)}
       />
 
       {/* 腮红 */}
@@ -603,12 +635,14 @@ interface EyeProps {
   stroke: string;
   pupilOffsetX: MotionValue<number>;
   pupilOffsetY: MotionValue<number>;
+  isDrawing: boolean;
 }
 
-function Eye({ side, expression, isBlinking, stroke, pupilOffsetX, pupilOffsetY }: EyeProps) {
+function Eye({ side, expression, isBlinking, stroke, pupilOffsetX, pupilOffsetY, isDrawing }: EyeProps) {
   // 眼睛位置更宽松
   const cx = side === 'left' ? 32 : 68;
   const cy = 46;
+  const drawDelay = side === 'left' ? 0.6 : 0.8;
 
   if (isBlinking || expression === 'sleepy') {
     return (
@@ -659,19 +693,34 @@ function Eye({ side, expression, isBlinking, stroke, pupilOffsetX, pupilOffsetY 
     );
   }
 
-  // 默认眼睛 - 带瞳孔追踪
+  // 默认眼睛 - 带瞳孔追踪和绘制动画
   return (
     <>
       {/* 眼白 */}
-      <circle cx={cx} cy={cy} r="5" fill="rgba(255,255,255,0.3)" />
+      <motion.circle 
+        cx={cx} cy={cy} r="5" 
+        fill="rgba(255,255,255,0.3)"
+        initial={isDrawing ? { scale: 0, opacity: 0 } : false}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.4, delay: drawDelay, ease: "easeOut" }}
+      />
       {/* 瞳孔 - 跟随鼠标 */}
       <motion.circle 
         cx={cx} cy={cy} r="3.5" 
         fill={stroke}
         style={{ x: pupilOffsetX, y: pupilOffsetY }}
+        initial={isDrawing ? { scale: 0, opacity: 0 } : false}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.3, delay: drawDelay + 0.2, ease: "easeOut" }}
       />
       {/* 眼睛高光 */}
-      <circle cx={cx + 1.5} cy={cy - 1.5} r="1" fill="rgba(255,255,255,0.8)" />
+      <motion.circle 
+        cx={cx + 1.5} cy={cy - 1.5} r="1" 
+        fill="rgba(255,255,255,0.8)"
+        initial={isDrawing ? { scale: 0, opacity: 0 } : false}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.2, delay: drawDelay + 0.4, ease: "easeOut" }}
+      />
     </>
   );
 }
@@ -791,3 +840,13 @@ function Mouth({ expression, stroke }: { expression: Expression; stroke: string 
       );
   }
 }
+
+
+// AuroraCharacter (主组件)
+// ├── DynamicBackground (背景 - 4角色块)
+// ├── AuroraOrb (极光球体 - 3扇形)
+// ├── ShySymbols (害羞符号 ❤♡✦)
+// └── Face (面部 SVG)
+//     ├── 眉毛 x2
+//     ├── Eye x2 (眼睛组件)
+//     └── 鼻子
