@@ -15,16 +15,10 @@ First, run the development server:
 ```bash
 git clone https://github.com/leekHotline/chat-app.git
 npm install -g pnpm
-pnpm install 
-```
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
 ```
+
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
