@@ -72,6 +72,22 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* 移除 SVG 默认边框 */
+svg {
+  outline: none;
+  border: none;
+}
+
+/* 移除所有 focus 边框 */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 @keyframes slideIn {
   from { opacity: 0; transform: translateX(-12px); }
   to { opacity: 1; transform: translateX(0); }

@@ -163,19 +163,23 @@ const AuroraCharacter = forwardRef<AuroraCharacterRef, AuroraCharacterProps>(({
   }, []);
 
   return (
-    <div className={`relative ${className}`} style={{ width: size, height: size }}>
+    <div 
+      className={`relative ${className}`} 
+      style={{ width: size, height: size, outline: 'none', overflow: 'visible' }}
+    >
       {/* 动态背景渐变 */}
       <DynamicBackground mousePos={mousePos} />
 
       {/* 主角色容器 */}
       <motion.div
-        className="absolute inset-0 cursor-pointer select-none"
+        className="absolute inset-0 cursor-pointer select-none outline-none overflow-visible"
         onClick={handleClick}
         style={{
           rotateX,
           rotateY,
           scale: breathScale,
           transformStyle: 'preserve-3d',
+          overflow: 'visible',
         }}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
@@ -190,6 +194,8 @@ const AuroraCharacter = forwardRef<AuroraCharacterRef, AuroraCharacterProps>(({
         <motion.svg
           viewBox="0 0 100 100"
           className="absolute inset-0 w-full h-full"
+          overflow="visible"
+          fill="none"
           style={{
             x: parallaxX,
             y: parallaxY,
@@ -345,7 +351,7 @@ function AuroraOrb({ mousePos, isDrawing }: { mousePos: { x: number; y: number }
   const b3 = Math.round(250 * cyanWeight + 255 * blueWeight + 250 * violetWeight + 255 * lavenderWeight);
 
   return (
-    <>
+    <div className="absolute inset-0 overflow-visible">
       {/* 扇形1 - 上方，扩展到150度覆盖间隙 */}
       <motion.div 
         className="absolute -inset-6 rounded-full"
@@ -446,7 +452,7 @@ function AuroraOrb({ mousePos, isDrawing }: { mousePos: { x: number; y: number }
         transition={{ duration: 0.15, ease: 'easeOut' }}
         style={{ filter: 'blur(8px)', mixBlendMode: 'screen' }}
       />
-    </>
+    </div>
   );
 }
 

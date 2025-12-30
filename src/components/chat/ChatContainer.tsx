@@ -21,6 +21,7 @@ export function ChatContainer() {
   } = useChat();
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const initialPromptSent = useRef(false);
 
   useEffect(() => {
     if (containerRef.current) {
@@ -40,6 +41,21 @@ export function ChatContainer() {
       );
     }
   }, []);
+
+  // 处理从首页传来的初始消息
+  useEffect(() => {
+    if (initialPromptSent.current) return;
+    
+    const initialPrompt = sessionStorage.getItem('initialPrompt');
+    if (initialPrompt) {
+      sessionStorage.removeItem('initialPrompt');
+      initialPromptSent.current = true;
+      // 延迟发送，等待组件完全加载
+      setTimeout(() => {
+        sendMessage(initialPrompt);
+      }, 300);
+    }
+  }, [sendMessage]);
 
   // 调试：监控 messages 变化
   useEffect(() => {
