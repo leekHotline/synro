@@ -1,7 +1,7 @@
 // src/stores/chatStore.ts
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { Message, Conversation, AIProvider } from '@/types';
+import { persist } from 'zustand/middleware';
+import { Message, Conversation, AIProvider, DEFAULT_PROVIDER, DEFAULT_MODEL } from '@/types';
 
 interface ChatState {
   // 对话
@@ -31,11 +31,11 @@ interface ChatState {
 
 export const useChatStore = create<ChatState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       conversations: [],
       currentConversationId: null,
-      currentProvider: 'openai',
-      currentModel: 'gpt-4o',
+      currentProvider: DEFAULT_PROVIDER,
+      currentModel: DEFAULT_MODEL,
       apiKeys: {} as Record<AIProvider, string>,
       _hasHydrated: false,
 

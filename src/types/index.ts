@@ -1,5 +1,5 @@
 // src/types/index.ts
-export type AIProvider = 'openai' | 'anthropic' | 'google' | 'deepseek' | 'qwen';
+export type AIProvider = 'google' | 'openai' | 'anthropic' | 'deepseek' | 'qwen';
 
 export interface Message {
   id: string;
@@ -32,17 +32,22 @@ export interface ProviderConfig {
 }
 
 export const PROVIDERS: Record<AIProvider, ProviderConfig> = {
+  google: {
+    name: 'Google Gemini',
+    models: [
+      'gemini-2.5-flash',        // 免费
+      'gemini-2.0-flash',        // 免费
+      'gemini-2.5-pro',          // 付费
+      'gemini-3-pro-preview',    // 付费
+    ],
+  },
   openai: {
     name: 'OpenAI',
     models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
   },
   anthropic: {
     name: 'Anthropic',
-    models: ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'],
-  },
-  google: {
-    name: 'Google',
-    models: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
+    models: ['claude-sonnet-4-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'],
   },
   deepseek: {
     name: 'DeepSeek',
@@ -55,3 +60,7 @@ export const PROVIDERS: Record<AIProvider, ProviderConfig> = {
     baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
   },
 };
+
+// 默认配置
+export const DEFAULT_PROVIDER: AIProvider = 'google';
+export const DEFAULT_MODEL = 'gemini-2.5-flash';
