@@ -1,16 +1,20 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 import AuroraCharacter from '@/components/design/AuroraCharacter';
 import Navbar from '@/components/home/Navbar';
 import HeroInput from '@/components/home/HeroInput';
 import AboutSection from '@/components/home/AboutSection';
+import StatsSection from '@/components/home/StatsSection';
 import ToolSection from '@/components/home/ToolSection';
 import Footer from '@/components/home/Footer';
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function HomePage() {
   const router = useRouter();
@@ -18,47 +22,48 @@ export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start start', 'end end'],
-  });
-
-  // 视差效果
-  const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -100]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
-
   // 入场动画
   useEffect(() => {
     const timer = setTimeout(() => setIsLoaded(true), 100);
     return () => clearTimeout(timer);
   }, []);
 
-  // GSAP 刷新动画
+  // GSAP 动画
   useEffect(() => {
     if (!heroRef.current || !isLoaded) return;
 
     const ctx = gsap.context(() => {
-      // 初始入场动画
+      // Aurora 单独淡入（不用 blur，避免边界问题）
       gsap.fromTo(
-        '.hero-element',
-        { opacity: 0, y: 30 },
-        { 
-          opacity: 1, 
-          y: 0, 
-          duration: 0.8, 
-          stagger: 0.15,
-          ease: 'power3.out',
-        }
+        '.aurora-wrapper',
+        { opacity: 0 },
+        { opacity: 1, duration: 1, ease: 'power2.out' }
       );
+
+      // 其他 Hero 元素入场动画 - 模糊到清晰
+      const heroElements = heroRef.current?.querySelectorAll('.hero-element');
+      if (heroElements) {
+        gsap.fromTo(
+          heroElements,
+          { opacity: 0, filter: 'blur(10px)' },
+          { 
+            opacity: 1, 
+            filter: 'blur(0px)',
+            duration: 1, 
+            stagger: 0.15,
+            ease: 'power2.out',
+            delay: 0.2,
+          }
+        );
+      }
     }, heroRef);
 
     return () => ctx.revert();
   }, [isLoaded]);
 
-  // 键盘事件
+  // 键盘刷新动画
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // F5 或 Ctrl+R 刷新时的动画
       if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
         setIsLoaded(false);
         setTimeout(() => setIsLoaded(true), 100);
@@ -78,39 +83,23 @@ export default function HomePage() {
       <Navbar onNewProject={() => router.push('/workspace')} />
 
       {/* Hero Section */}
-      <motion.section
+      <section
         ref={heroRef}
         className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-20"
-        style={{ y: heroY, opacity: heroOpacity }}
       >
-        {/* Aurora Character */}
-        <motion.div
-          className="hero-element mb-8"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={isLoaded ? { opacity: 1, scale: 1 } : {}}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
-        >
+        {/* Aurora Character - 不参与 blur 动画 */}
+        <div className="aurora-wrapper mb-8">
           <AuroraCharacter size={260} />
-        </motion.div>
+        </div>
 
         {/* Tagline */}
-        <motion.h1
-          className="hero-element text-4xl md:text-5xl font-semibold text-gray-800 text-center mb-4 tracking-tight"
-          initial={{ opacity: 0, y: 20 }}
-          animate={isLoaded ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
+        <h1 className="hero-element text-4xl md:text-5xl font-semibold text-gray-800 text-center mb-4 tracking-tight">
           Your AI Creative Partner
-        </motion.h1>
+        </h1>
 
-        <motion.p
-          className="hero-element text-gray-500 text-center mb-12 max-w-md"
-          initial={{ opacity: 0, y: 20 }}
-          animate={isLoaded ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.3 }}
-        >
+        <p className="hero-element text-gray-500 text-center mb-12 max-w-md">
           Minimal design, maximum creativity
-        </motion.p>
+        </p>
 
         {/* Input */}
         <div className="hero-element w-full max-w-2xl">
@@ -136,10 +125,13 @@ export default function HomePage() {
             />
           </motion.div>
         </motion.div>
-      </motion.section>
+      </section>
 
       {/* About Section */}
       <AboutSection />
+
+      {/* Stats Section */}
+      <StatsSection />
 
       {/* Tool Section */}
       <ToolSection />

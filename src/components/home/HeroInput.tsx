@@ -23,7 +23,7 @@ export default function HeroInput() {
     >
       <ChatInputBox
         onSubmit={handleSubmit}
-        placeholder="有什么我能帮您的吗？"
+        placeholder="Ask anything..."
         showHint={true}
       />
     </motion.div>

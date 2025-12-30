@@ -21,7 +21,7 @@ export default function ChatInputBox({
   onSubmit,
   onStop,
   isLoading = false,
-  placeholder = '有什么我能帮您的吗？',
+  placeholder = 'Ask anything...',
   showHint = true,
   autoFocus = false,
 }: ChatInputBoxProps) {
