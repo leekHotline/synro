@@ -5,38 +5,44 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { decrypt } from '@/lib/utils/encryption';
 import { AIProvider } from '@/types';
-import { ProxyAgent, fetch as undiciFetch } from 'undici';
 
 // 服务端环境变量
 const DEFAULT_GEMINI_KEY = process.env.GEMINI_API_KEY;
 const HTTPS_PROXY = process.env.HTTPS_PROXY;
 
-// 创建代理 fetch（仅当配置了代理时）
-function createProxyFetch() {
+// 动态创建代理 fetch（仅本地开发需要，Vercel 可直连）
+async function createProxyFetch() {
   if (!HTTPS_PROXY) return undefined;
-  
-  const proxyAgent = new ProxyAgent(HTTPS_PROXY);
-  return (url: string | URL | Request, init?: RequestInit) => {
-    return undiciFetch(url as any, {
-      ...init,
-      dispatcher: proxyAgent,
-    } as any) as Promise<Response>;
-  };
+
+  try {
+    const { ProxyAgent, fetch: undiciFetch } = await import('undici');
+    const proxyAgent = new ProxyAgent(HTTPS_PROXY);
+    return (url: string | URL | Request, init?: RequestInit) => {
+      return undiciFetch(url as Parameters<typeof undiciFetch>[0], {
+        ...init,
+        dispatcher: proxyAgent,
+      } as Parameters<typeof undiciFetch>[1]) as unknown as Promise<Response>;
+    };
+  } catch {
+    return undefined;
+  }
 }
 
-const proxyFetch = createProxyFetch();
-
-function getModel(provider: AIProvider, modelId: string, apiKey: string) {
+function getModel(
+  provider: AIProvider,
+  modelId: string,
+  apiKey: string,
+  proxyFetch?: (url: string | URL | Request, init?: RequestInit) => Promise<Response>
+) {
   switch (provider) {
     case 'openai':
-      return createOpenAI({ 
+      return createOpenAI({
         apiKey,
-        // OpenAI 也可能需要代理
         ...(proxyFetch && { fetch: proxyFetch }),
       })(modelId);
 
     case 'anthropic':
-      return createAnthropic({ 
+      return createAnthropic({
         apiKey,
         ...(proxyFetch && { fetch: proxyFetch }),
       })(modelId);
@@ -44,21 +50,18 @@ function getModel(provider: AIProvider, modelId: string, apiKey: string) {
     case 'google': {
       const google = createGoogleGenerativeAI({
         apiKey,
-        // Google 需要代理
         ...(proxyFetch && { fetch: proxyFetch }),
       });
       return google(modelId);
     }
 
     case 'deepseek':
-      // DeepSeek 国内直连，不用代理
       return createOpenAI({
         apiKey,
         baseURL: 'https://api.deepseek.com',
       }).chat(modelId);
 
     case 'qwen':
-      // Qwen 国内直连，不用代理
       return createOpenAI({
         apiKey,
         baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -92,7 +95,6 @@ export async function POST(req: Request) {
       apiKey = decrypt(encryptedApiKey);
     }
 
-    // Google 使用服务端默认 key
     if (!apiKey && provider === 'google' && DEFAULT_GEMINI_KEY) {
       apiKey = DEFAULT_GEMINI_KEY;
     }
@@ -104,7 +106,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const aiModel = getModel(provider, model, apiKey);
+    // 获取代理 fetch（如果配置了代理）
+    const proxyFetch = await createProxyFetch();
+
+    const aiModel = getModel(provider, model, apiKey, proxyFetch);
     const modelMessages = await convertToModelMessages(messages);
 
     const result = streamText({

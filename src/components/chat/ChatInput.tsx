@@ -76,10 +76,10 @@ export function ChatInput({ input, setInput, onSend, isLoading, onStop }: ChatIn
               : 'border-border/50 hover:border-border'
           )}
         >
-          <div className="flex items-end p-3 gap-3">
-            {/* 左侧工具按钮 */}
+          <div className="flex items-end p-2 sm:p-3 gap-2 sm:gap-3">
+            {/* 左侧工具按钮 - 移动端隐藏部分 */}
             <TooltipProvider>
-              <div className="flex items-center gap-1 pb-2">
+              <div className="hidden sm:flex items-center gap-1 pb-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button 
@@ -107,65 +107,50 @@ export function ChatInput({ input, setInput, onSend, isLoading, onStop }: ChatIn
               </div>
             </TooltipProvider>
 
-            {/* 文本输入 - 扩大 */}
+            {/* 文本输入 */}
             <Textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="输入消息，Shift + Enter 换行..."
-              rows={2}
+              placeholder="输入消息..."
+              rows={1}
               className={cn(
                 'flex-1 border-0 bg-transparent shadow-none resize-none',
-                'focus-visible:ring-0 min-h-[60px] max-h-[200px] py-3 text-base',
+                'focus-visible:ring-0 min-h-[44px] sm:min-h-[60px] max-h-[120px] sm:max-h-[200px] py-2 sm:py-3 text-base',
                 'placeholder:text-muted-foreground/60'
               )}
               disabled={isLoading}
             />
 
-            {/* 右侧按钮 */}
-            <TooltipProvider>
-              <div className="flex items-center gap-2 pb-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-9 w-9 hover:scale-110 hover:bg-primary/10 transition-all duration-200"
-                    >
-                      <Mic size={18} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>语音</TooltipContent>
-                </Tooltip>
-                
-                {isLoading ? (
-                  <Button 
-                    variant="destructive" 
-                    size="icon" 
-                    onClick={onStop} 
-                    className="h-11 w-11 rounded-xl hover:scale-105 transition-transform"
-                  >
-                    <Square size={18} />
-                  </Button>
-                ) : (
-                  <Button 
-                    ref={sendBtnRef}
-                    size="icon" 
-                    onClick={handleSubmit}
-                    disabled={!input.trim()}
-                    className={cn(
-                      "h-11 w-11 rounded-xl transition-all duration-300",
-                      input.trim() 
-                        ? "bg-primary hover:bg-primary/90 hover:scale-105 shadow-md shadow-primary/30" 
-                        : "bg-muted"
-                    )}
-                  >
-                    <Send size={18} />
-                  </Button>
-                )}
-              </div>
-            </TooltipProvider>
+            {/* 发送按钮 */}
+            <div className="flex items-center pb-1 sm:pb-2">
+              {isLoading ? (
+                <Button 
+                  variant="destructive" 
+                  size="icon" 
+                  onClick={onStop} 
+                  className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl hover:scale-105 transition-transform"
+                >
+                  <Square size={18} />
+                </Button>
+              ) : (
+                <Button 
+                  ref={sendBtnRef}
+                  size="icon" 
+                  onClick={handleSubmit}
+                  disabled={!input.trim()}
+                  className={cn(
+                    "h-10 w-10 sm:h-11 sm:w-11 rounded-xl transition-all duration-300",
+                    input.trim() 
+                      ? "bg-primary hover:bg-primary/90 hover:scale-105 shadow-md shadow-primary/30" 
+                      : "bg-muted"
+                  )}
+                >
+                  <Send size={18} />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
