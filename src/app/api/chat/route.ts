@@ -5,28 +5,65 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { decrypt } from '@/lib/utils/encryption';
 import { AIProvider } from '@/types';
+import { ProxyAgent, fetch as undiciFetch } from 'undici';
 
-// export const runtime = 'edge';
+// 服务端环境变量
+const DEFAULT_GEMINI_KEY = process.env.GEMINI_API_KEY;
+const HTTPS_PROXY = process.env.HTTPS_PROXY;
+
+// 创建代理 fetch（仅当配置了代理时）
+function createProxyFetch() {
+  if (!HTTPS_PROXY) return undefined;
+  
+  const proxyAgent = new ProxyAgent(HTTPS_PROXY);
+  return (url: string | URL | Request, init?: RequestInit) => {
+    return undiciFetch(url as any, {
+      ...init,
+      dispatcher: proxyAgent,
+    } as any) as Promise<Response>;
+  };
+}
+
+const proxyFetch = createProxyFetch();
 
 function getModel(provider: AIProvider, modelId: string, apiKey: string) {
   switch (provider) {
     case 'openai':
-      return createOpenAI({ apiKey })(modelId);
-    case 'anthropic':
-      return createAnthropic({ apiKey })(modelId);
-    case 'google':
-      return createGoogleGenerativeAI({ apiKey })(modelId);
-    case 'deepseek':
-      // DeepSeek 使用 OpenAI 兼容接口，指定 chat completions 端点
       return createOpenAI({ 
-        apiKey, 
+        apiKey,
+        // OpenAI 也可能需要代理
+        ...(proxyFetch && { fetch: proxyFetch }),
+      })(modelId);
+
+    case 'anthropic':
+      return createAnthropic({ 
+        apiKey,
+        ...(proxyFetch && { fetch: proxyFetch }),
+      })(modelId);
+
+    case 'google': {
+      const google = createGoogleGenerativeAI({
+        apiKey,
+        // Google 需要代理
+        ...(proxyFetch && { fetch: proxyFetch }),
+      });
+      return google(modelId);
+    }
+
+    case 'deepseek':
+      // DeepSeek 国内直连，不用代理
+      return createOpenAI({
+        apiKey,
         baseURL: 'https://api.deepseek.com',
       }).chat(modelId);
+
     case 'qwen':
-      return createOpenAI({ 
-        apiKey, 
+      // Qwen 国内直连，不用代理
+      return createOpenAI({
+        apiKey,
         baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
       }).chat(modelId);
+
     default:
       throw new Error(`Unknown provider: ${provider}`);
   }
@@ -39,31 +76,40 @@ export async function POST(req: Request) {
       messages: UIMessage[];
       model: string;
       provider: AIProvider;
-      encryptedApiKey: string;
+      encryptedApiKey?: string;
     };
 
-    if (!messages || !model || !provider || !encryptedApiKey) {
+    if (!messages || !model || !provider) {
       return new Response(
         JSON.stringify({ error: 'Missing required parameters' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    const apiKey = decrypt(encryptedApiKey);
-    console.log('Decrypted apiKey length:', apiKey?.length, 'isEmpty:', !apiKey);
+    let apiKey: string | undefined;
+
+    if (encryptedApiKey) {
+      apiKey = decrypt(encryptedApiKey);
+    }
+
+    // Google 使用服务端默认 key
+    if (!apiKey && provider === 'google' && DEFAULT_GEMINI_KEY) {
+      apiKey = DEFAULT_GEMINI_KEY;
+    }
+
     if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: 'Invalid API key' }),
+        JSON.stringify({ error: `请配置 ${provider} 的 API Key` }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     const aiModel = getModel(provider, model, apiKey);
+    const modelMessages = await convertToModelMessages(messages);
 
-    // ✅ 最简 AI SDK v6 调用（无 tools）
     const result = streamText({
       model: aiModel,
-      messages: await convertToModelMessages(messages),
+      messages: modelMessages,
     });
 
     return result.toUIMessageStreamResponse();

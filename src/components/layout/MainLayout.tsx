@@ -4,6 +4,7 @@
 import { useEffect, useRef } from 'react';
 import { Sidebar } from './Sidebar';
 import { ApiKeyManager } from '../settings/ApiKeyManager';
+import { ModelSelector } from '../chat/ModelSelector';
 import gsap from 'gsap';
 
 interface MainLayoutProps {
@@ -20,7 +21,6 @@ export function MainLayout({ children }: MainLayoutProps) {
       const main = layoutRef.current.querySelector('.layout-main');
       const header = layoutRef.current.querySelector('.layout-header');
 
-      // 初始状态
       gsap.set([sidebar, main, header], { opacity: 0 });
 
       const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
@@ -57,8 +57,9 @@ export function MainLayout({ children }: MainLayoutProps) {
 
       {/* 主内容区 */}
       <main className="layout-main flex-1 flex flex-col overflow-hidden relative z-10">
-        {/* 顶部栏 */}
-        <header className="layout-header flex justify-end px-6 py-4 border-b border-border/30 bg-white/40 backdrop-blur-md">
+        {/* 顶部栏 - 模型选择器 + API Keys */}
+        <header className="layout-header flex items-center justify-between px-6 py-3 border-b border-border/30 bg-white/40 backdrop-blur-md">
+          <ModelSelector />
           <ApiKeyManager />
         </header>
 

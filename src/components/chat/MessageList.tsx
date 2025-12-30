@@ -87,14 +87,14 @@ export function MessageList({ messages }: MessageListProps) {
   }, [messages]);
 
   return (
-    <ScrollArea className="flex-1">
+    <div className="h-full overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 md:px-8 py-8 space-y-8">
         {messages.map((message, index) => (
           <MessageBubble key={message.id} message={message} index={index} />
         ))}
         <div ref={bottomRef} />
       </div>
-    </ScrollArea>
+    </div>
   );
 }
 
