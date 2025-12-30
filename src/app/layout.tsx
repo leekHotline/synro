@@ -6,7 +6,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'AI Chat - 多模型智能对话',
+  title: 'Synro 生产力助手',
   description: '支持 GPT、Claude、Gemini 等多种 AI 模型的现代化聊天应用',
 };
 
