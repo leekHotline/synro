@@ -16,7 +16,7 @@ const links = [
 ];
 
 const socials = [
-  { icon: Github, href: '#', label: 'GitHub' },
+  { icon: Github, href: 'https://github.com/leekHotline/synro', label: 'GitHub' },
   { icon: Twitter, href: '#', label: 'Twitter' },
 ];
 

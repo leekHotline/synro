@@ -23,10 +23,15 @@
       "electron/**/*",
       "package.json"
     ],
+    "extraResources": [
+      {
+        "from": "public/big-icon.ico",
+        "to": "icon.ico"
+      }
+    ],
     "win": {
       "target": "nsis",
-      "icon": "public/big-icon.ico",
-      "signAndEditExecutable": false
+      "icon": "public/big-icon.ico"
     },
     "nsis": {
       "oneClick": false,
